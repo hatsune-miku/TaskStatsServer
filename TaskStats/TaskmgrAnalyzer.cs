@@ -78,6 +78,19 @@ namespace TaskStatsServer.TaskStats
             }
 
             _categories = [foregroundProcessCategory, backgroundProcessCategory];
+
+            // Thread.Sleep(3500);
+            // TraverseUITree(0, backgroundProcessCategory);
+        }
+
+        private void TraverseUITree(int level, AutomationElement rootElement)
+        {
+            var leftPadding = new string('\t', level);
+            Console.WriteLine($"{leftPadding} level={level} ({rootElement.GetCurrentName()} [{rootElement.GetCurrentClassName()}])");
+            foreach (var child in rootElement.FindAllChildren())
+            {
+                TraverseUITree(level + 1, child);
+            }
         }
 
         public List<Dictionary<string, string>> ExtractFeaturedProcessInfo()
@@ -106,22 +119,33 @@ namespace TaskStatsServer.TaskStats
                         continue;
                     }
                     targetProcesses.Add(processCandidate);
+                    var subCandidates = from candidate in processCandidate.FindAllChildren()
+                                        where candidate.GetCurrentClassName() == "TmViewItemSelector"
+                                        select candidate;
+                    targetProcesses.AddRange(subCandidates);
                 }
                 if (targetProcesses.Count > 0)
                 {
-                    var targetProcess = targetProcesses.First();
-                    var properties = targetProcess.FindAllChildren();
-                    var processInfo = new Dictionary<string, string>();
-
-                    _headers.Zip(properties, (header, property) =>
+                    foreach (var targetProcess in targetProcesses)
                     {
-                        var value = property.GetCurrentName();
-                        processInfo[header] = value;
-                        return (header, value);
-                    }).Count();
+                        var properties = targetProcess.FindAllChildren();
+                        var processInfo = new Dictionary<string, string>();
 
-                    processInfo["名称"] = targetProcess.GetCurrentName();
-                    ret.Add(processInfo);
+                        _headers.Zip(properties, (header, property) =>
+                        {
+                            var value = property.GetCurrentName();
+                            processInfo[header] = value;
+                            return (header, value);
+                        }).Count();
+
+                        // 进行简单的后处理~
+                        processInfo["名称"] = targetProcess.GetCurrentName();
+                        if (processInfo["PID"] == "")
+                        {
+                            processInfo["PID"] = "0";
+                        }
+                        ret.Add(processInfo);
+                    }
                 }
             }
             return ret;
