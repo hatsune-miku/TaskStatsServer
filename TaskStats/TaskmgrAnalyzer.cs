@@ -11,6 +11,11 @@ namespace TaskStatsServer.TaskStats
 {
     internal class TaskmgrAnalyzer
     {
+        private static readonly string[] ProcessNameColumnTextList = { "进程", "Processes" };
+        private static readonly string[] ApplicationColumnTextList = { "应用", "Apps" };
+        private static readonly string[] BackgroundApplicationColumnTextList = { "后台进程", "Background processes" };
+        private static readonly string[] MemoryItemTextList = { "内存", "Memory" };
+
         private Application? _taskmgrApp = null;
         private UIA3Automation? _automation = null;
         private Window? _mainWindow = null;
@@ -59,7 +64,7 @@ namespace TaskStatsServer.TaskStats
             _UpdateHeaders();
 
             var processMasterCategory = rootElement.FindOneBy(el =>
-                el.GetCurrentName() == "进程" && el.GetCurrentClassName() == "TmScrollViewer");
+                ProcessNameColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmScrollViewer");
 
             if (processMasterCategory == null)
             {
@@ -67,10 +72,10 @@ namespace TaskStatsServer.TaskStats
             }
 
             var foregroundProcessCategory = processMasterCategory.FindOneBy(el =>
-                el.GetCurrentName() == "应用" && el.GetCurrentClassName() == "TmGroupHeader");
+                ApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader");
 
             var backgroundProcessCategory = processMasterCategory.FindOneBy(el =>
-                el.GetCurrentName() == "后台进程" && el.GetCurrentClassName() == "TmGroupHeader");
+                BackgroundApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader");
 
             if (foregroundProcessCategory == null || backgroundProcessCategory == null)
             {
@@ -133,6 +138,10 @@ namespace TaskStatsServer.TaskStats
 
                         _headers.Zip(properties, (header, property) =>
                         {
+                            if (MemoryItemTextList.Contains(header))
+                            {
+                                header = "内存";
+                            }
                             var value = property.GetCurrentName();
                             processInfo[header] = value;
                             return (header, value);
@@ -140,9 +149,17 @@ namespace TaskStatsServer.TaskStats
 
                         // 进行简单的后处理~
                         processInfo["名称"] = targetProcess.GetCurrentName();
-                        if (processInfo["PID"] == "")
+                        foreach (var item in (new string[] {
+                            "PID",
+                            "内存",
+                            "CPU",
+                            "GPU"
+                        }))
                         {
-                            processInfo["PID"] = "0";
+                            if (processInfo[item] == "")
+                            {
+                                processInfo[item] = "0";
+                            }
                         }
                         ret.Add(processInfo);
                     }
