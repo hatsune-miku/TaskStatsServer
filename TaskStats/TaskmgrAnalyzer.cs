@@ -142,7 +142,7 @@ namespace TaskStatsServer.TaskStats
                             {
                                 header = "内存";
                             }
-                            var value = property.GetCurrentName();
+                            var value = property.GetCurrentName().Replace("\"", "\\\"");
                             processInfo[header] = value;
                             return (header, value);
                         }).Count();

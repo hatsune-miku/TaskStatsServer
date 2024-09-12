@@ -8,6 +8,8 @@ using System.Drawing.Drawing2D;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TaskStatsServer.Extensions;
 using TaskStatsServer.TaskStats;
 
@@ -82,21 +84,7 @@ class Program
             HttpListenerContext context = await _listener.GetContextAsync();
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
-
-            // Serialize
-            var jsonString = "[";
-            foreach (var process in _latestProcesses ?? [])
-            {
-                var processJson = "{";
-                foreach (var (key, value) in process)
-                {
-                    processJson += $"\"{key}\":\"{value}\",";
-                }
-                processJson = processJson.TrimEnd(',') + "}";
-                jsonString += processJson + ",";
-            }
-            jsonString = jsonString.TrimEnd(',') + "]";
-
+            var jsonString = JsonSerializer.Serialize(_latestProcesses) ?? "";
             byte[] data = Encoding.UTF8.GetBytes(jsonString);
             response.ContentType = "application/json";
             response.ContentEncoding = Encoding.UTF8;
