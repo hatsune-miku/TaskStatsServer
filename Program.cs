@@ -65,18 +65,9 @@ class Program
         }
 
         Console.WriteLine($"""
-            ============================================
-             _____         _     ____  _        _       
-            |_   _|_ _ ___| | __/ ___|| |_ __ _| |_ ___ 
-              | |/ _` / __| |/ /\___ \| __/ _` | __/ __|
-              | | (_| \__ \   <  ___) | || (_| | |_\__ \
-              |_|\__,_|___/_|\_\|____/ \__\__,_|\__|___/
-
-                       TaskStatsServer v0.0.1
-            ============================================
-
-              * Listening at {_prefix}
-              * Featured Process Patterns: {string.Join(", ", _featuredProcessPatterns)}
+            TaskStatsServer v0.2.0
+             * Listening at {_prefix}
+             * Process Patterns: {string.Join(", ", _featuredProcessPatterns)}
             """);
 
         while (true)

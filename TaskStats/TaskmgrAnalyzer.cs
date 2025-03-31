@@ -11,7 +11,8 @@ namespace TaskStatsServer.TaskStats
 {
     internal class TaskmgrAnalyzer
     {
-        private static readonly string[] ProcessNameColumnTextList = { "进程", "Processes" };
+        private static readonly string[] TaskMgrMainWindowTextList = { "任务管理器", "TaskManagerMain" };
+        private static readonly string[] ProcessNameColumnTextList = { "进程", "Processes", "项目列表" };
         private static readonly string[] ApplicationColumnTextList = { "应用", "Apps" };
         private static readonly string[] BackgroundApplicationColumnTextList = { "后台进程", "Background processes" };
         private static readonly string[] MemoryItemTextList = { "内存", "Memory" };
@@ -38,12 +39,12 @@ namespace TaskStatsServer.TaskStats
             _automation = new UIA3Automation();
             _mainWindow = _taskmgrApp.GetMainWindow(_automation);
             _featuredProcessPatterns = processPatterns;
-
+            
             AutomationElement? rootElement = null;
             var elements = _mainWindow.FindAll(TreeScope.Children, TrueCondition.Default);
             foreach (var element in elements)
             {
-                if (element.GetCurrentName() == "TaskManagerMain")
+                if (TaskMgrMainWindowTextList.Contains(element.GetCurrentName()))
                 {
                     rootElement = element;
                     break;
@@ -52,46 +53,51 @@ namespace TaskStatsServer.TaskStats
 
             if (rootElement == null)
             {
-                throw new InvalidOperationException("Root element not found");
+                throw new InvalidOperationException("Root element not found (TaskMgrMainWindowTextList)");
             }
 
             _columnHeader = rootElement.FindOneBy(el => el.GetCurrentClassName() == "TmColumnHeader");
             if (_columnHeader == null)
             {
-                throw new InvalidOperationException("Column header not found");
+                throw new InvalidOperationException("Column header not found (TmColumnHeader)");
             }
 
             _UpdateHeaders();
 
             var processMasterCategory = rootElement.FindOneBy(el =>
-                ProcessNameColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmScrollViewer");
+            {
+                return ProcessNameColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmScrollViewer";
+            });
 
             if (processMasterCategory == null)
             {
-                throw new InvalidOperationException("Process master category not found");
+                throw new InvalidOperationException("Process master category not found (TmScrollViewer)");
             }
 
             var foregroundProcessCategory = processMasterCategory.FindOneBy(el =>
-                ApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader");
+            {
+                return ApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader";
+            });
 
             var backgroundProcessCategory = processMasterCategory.FindOneBy(el =>
-                BackgroundApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader");
+            {
+                return BackgroundApplicationColumnTextList.Contains(el.GetCurrentName()) && el.GetCurrentClassName() == "TmGroupHeader";
+            });
 
             if (foregroundProcessCategory == null || backgroundProcessCategory == null)
             {
-                throw new InvalidOperationException("Process category not found");
+                throw new InvalidOperationException("Process category not found (TmGroupHeader)");
             }
 
             _categories = [foregroundProcessCategory, backgroundProcessCategory];
+            Console.WriteLine("Analyzer started.");
 
-            // Thread.Sleep(3500);
-            // TraverseUITree(0, backgroundProcessCategory);
+            TraverseUITree(0, rootElement);
         }
 
         private void TraverseUITree(int level, AutomationElement rootElement)
         {
             var leftPadding = new string('\t', level);
-            Console.WriteLine($"{leftPadding} level={level} ({rootElement.GetCurrentName()} [{rootElement.GetCurrentClassName()}])");
             foreach (var child in rootElement.FindAllChildren())
             {
                 TraverseUITree(level + 1, child);
@@ -156,9 +162,11 @@ namespace TaskStatsServer.TaskStats
                             "GPU"
                         }))
                         {
-                            if (processInfo[item] == "")
-                            {
-                                processInfo[item] = "0";
+                            if (processInfo.ContainsKey(item)) {
+                                if (processInfo[item] == "")
+                                {
+                                    processInfo[item] = "0";
+                                }
                             }
                         }
                         ret.Add(processInfo);
