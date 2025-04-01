@@ -56,6 +56,8 @@ namespace TaskStatsServer.TaskStats
                 throw new InvalidOperationException("Root element not found (TaskMgrMainWindowTextList)");
             }
 
+            // TraverseUITree(0, rootElement);
+
             _columnHeader = rootElement.FindOneBy(el => el.GetCurrentClassName() == "TmColumnHeader");
             if (_columnHeader == null)
             {
@@ -86,18 +88,21 @@ namespace TaskStatsServer.TaskStats
 
             if (foregroundProcessCategory == null || backgroundProcessCategory == null)
             {
-                throw new InvalidOperationException("Process category not found (TmGroupHeader)");
+                _categories = [processMasterCategory];
+                //throw new InvalidOperationException("Process category not found (TmGroupHeader)");
+            }
+            else
+            {
+                _categories = [foregroundProcessCategory, backgroundProcessCategory];
             }
 
-            _categories = [foregroundProcessCategory, backgroundProcessCategory];
             Console.WriteLine("Analyzer started.");
-
-            TraverseUITree(0, rootElement);
         }
 
         private void TraverseUITree(int level, AutomationElement rootElement)
         {
             var leftPadding = new string('\t', level);
+            //Console.WriteLine(leftPadding + "[" +  rootElement.GetCurrentClassName() + "] " + rootElement.GetCurrentName());
             foreach (var child in rootElement.FindAllChildren())
             {
                 TraverseUITree(level + 1, child);
